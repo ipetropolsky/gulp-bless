@@ -10,11 +10,12 @@ var applySourcemap  = require('vinyl-sourcemaps-apply');
 var File = gutil.File;
 var PluginError = gutil.PluginError;
 
-module.exports = function(options){
+module.exports = function(options) {
     var pluginName = 'gulp-bless';
     options = options || {};
     options.imports = options.imports === undefined ? true : options.imports;
     options.cacheBuster = options.cacheBuster === undefined ? true : options.cacheBuster;
+    var logger = options.logger || (options.log ? gutil.log.bind(gutil) : function() {});
 
     return through.obj(function(file, enc, cb) {
         if (file.isNull()) return cb(null, file); // ignore
@@ -42,16 +43,14 @@ module.exports = function(options){
             var numberOfSplits = result.data.length;
 
 
-            if (options.log) {
-                // print log message
-                var msg = 'Found ' + result.totalSelectorCount + ' selector';
-                if (result.data.length > 1) {
-                    msg += 's in {}, splitting into ' + result.data.length + ' blessedFiles.';
-                } else {
-                    msg += ' in {}, not splitting.';
-                }
-                gutil.log(msg.replace('{}', outputFilePath));
+            // print log message
+            var msg = 'Found ' + result.totalSelectorCount + ' selector';
+            if (result.data.length > 1) {
+                msg += 's in {}, splitting into ' + result.data.length + ' blessedFiles.';
+            } else {
+                msg += ' in {}, not splitting.';
             }
+            logger(msg.replace('{}', outputFilePath));
 
             var addSourcemap = function(fileProps, blessOutputIndex) {
                 var fileToAddTo = new File({
