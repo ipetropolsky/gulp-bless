@@ -21,7 +21,7 @@ module.exports = function(options){
         if (file.isStream()) return cb(new PluginError(pluginName,  'Streaming not supported'));
 
         var stream = this;
-        var shouldCreateSourcemaps = file.sourceMap;
+        var shouldCreateSourcemaps = !!file.sourceMap;
 
         if (file.contents && file.contents.toString()) {
             var fileName = path.basename(file.path);
@@ -53,26 +53,34 @@ module.exports = function(options){
                 gutil.log(msg.replace('{}', outputFilePath));
             }
 
-            var addSourcemap = function(fileToAddTo, blessOutputIndex) {
-                if(!shouldCreateSourcemaps) return fileToAddTo;
-                applySourcemap(fileToAddTo, {
-                    version: 3,
-                    file: fileToAddTo.relative,
-                    sources: [file.relative],
-                    mappings: result.maps[blessOutputIndex]
+            var addSourcemap = function(fileProps, blessOutputIndex) {
+                var fileToAddTo = new File({
+                    cwd: fileProps.cwd,
+                    base: fileProps.base,
+                    path: fileProps.path,
+                    contents: fileProps.contents
                 });
+                if (shouldCreateSourcemaps) {
+                    fileToAddTo.sourceMap = file.sourceMap;
+                    applySourcemap(fileToAddTo, {
+                        version: 3,
+                        file: fileToAddTo.relative,
+                        sources: [file.relative],
+                        mappings: result.maps[blessOutputIndex].mappings
+                    });
+                }
                 return fileToAddTo;
             };
 
 
             // get out early if the file isn't long enough
             if(result.data.length === 1){
-                return cb(null, addSourcemap(new File({
+                return cb(null, addSourcemap({
                     cwd: file.cwd,
                     base: file.base,
                     path: outputFilePath,
                     contents: new Buffer(result.data[0])
-                }, 0)));
+                }, 0));
             }
 
 
@@ -106,13 +114,12 @@ module.exports = function(options){
                 var outputPath = newIndex
                     ? path.resolve(path.join(outputPathStart, createBlessedFileName(newIndex)))
                     : outputFilePath;
-
-                outputFiles[newIndex] = addSourcemap(new File({
+                outputFiles[newIndex] = addSourcemap({
                     cwd: file.cwd,
                     base: file.base,
                     path: outputPath,
                     contents: new Buffer(addImports(newIndex, result.data[j]))
-                }), j);
+                }, j);
             }
 
 
