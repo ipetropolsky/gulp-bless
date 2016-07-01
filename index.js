@@ -45,12 +45,12 @@ module.exports = function(options){
             if (options.log) {
                 // print log message
                 var msg = 'Found ' + result.totalSelectorCount + ' selector';
-                if (result.totalSelectorCount.length > 1) {
-                    msg += 's, splitting into ' + result.data.length + ' blessedFiles.';
+                if (result.data.length > 1) {
+                    msg += 's in {}, splitting into ' + result.data.length + ' blessedFiles.';
                 } else {
-                    msg += ', not splitting.';
+                    msg += ' in {}, not splitting.';
                 }
-                gutil.log(msg);
+                gutil.log(msg.replace('{}', outputFilePath));
             }
 
             var addSourcemap = function(fileToAddTo, blessOutputIndex) {
